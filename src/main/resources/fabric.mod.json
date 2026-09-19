@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "zerowait",
+  "version": "${version}",
+  "name": "ZeroWait",
+  "description": "Client startup optimizations: deferred reloads, boot-only executors and overlay trimming to reach the title screen as fast as possible.",
+  "authors": [
+    "TrueWulf"
+  ],
+  "contact": {
+    "sources": "https://github.com/TrueWulf/ZeroWait"
+  },
+  "license": "GPL-3.0-or-later",
+  "icon": "assets/zerowait/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.truewulf.zerowait.ZeroWait"
+    ]
+  },
+  "mixins": [
+    "zerowait.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "${mc_compat}"
+  }
+}

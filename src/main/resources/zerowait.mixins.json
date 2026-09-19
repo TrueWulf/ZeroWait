@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.truewulf.zerowait.mixin",
+  "compatibilityLevel": "JAVA_${java}",
+  "mixins": [],
+  "client": [
+${screen_mixins}
+    "ClientMainMixin",
+    "LoadingOverlayMixin",
+    "MinecraftMixin",
+    "ReloadableResourceManagerMixin",
+    "UnihexProviderDefinitionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

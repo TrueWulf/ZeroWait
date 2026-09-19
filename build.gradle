@@ -1,0 +1,58 @@
+plugins {
+    id 'dev.kikugie.loom-back-compat'
+}
+
+def modern = sc.current.parsed >= '26.1'
+def javaVersion = modern ? JavaVersion.VERSION_25 : JavaVersion.VERSION_21
+
+version = "${property('mod.version')}+${sc.current.version}"
+group = 'dev.truewulf.zerowait'
+
+base {
+    archivesName = 'zerowait'
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${sc.current.version}"
+    if (!modern) {
+        mappings loom.officialMojangMappings()
+    }
+    add('modImplementation', "net.fabricmc:fabric-loader:${property('deps.fabric_loader')}")
+    compileOnly 'io.github.llamalad7:mixinextras-fabric:0.5.5'
+}
+
+loom {
+    mixin {
+        useLegacyMixinAp = false
+    }
+    runs {
+        client {
+            client()
+        }
+    }
+}
+
+java {
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(modern ? 25 : 21)
+    }
+}
+
+processResources {
+    def screenMixins = modern ? '' : '"AccessibilityOnboardingScreenMixin",\n    "TitleScreenMixin",'
+    def props = [
+            'version'  : project.property('mod.version').toString(),
+            'mc_compat': sc.properties.raw('mod', 'mc_compat').toString(),
+            'java'     : modern ? '25' : '21',
+            'screen_mixins': screenMixins
+    ]
+    inputs.properties(props)
+    filesMatching('fabric.mod.json') {
+        expand(props)
+    }
+    filesMatching('*.mixins.json') {
+        expand(props)
+    }
+}
