@@ -4,88 +4,91 @@
 
 **Boot Minecraft, not a loading screen.**
 
-[![Modrinth](https://img.shields.io/modrinth/dt/zerowait?logo=modrinth&label=downloads&color=00af5c)](https://modrinth.com/mod/zerowait)
-[![Modrinth version](https://img.shields.io/modrinth/v/zerowait?logo=modrinth&color=00af5c)](https://modrinth.com/mod/zerowait)
+A client-side Fabric mod that gets you from "Play" to the title screen as
+fast as the game allows — and trims everything that made you wait.
+
+[![Modrinth downloads](https://img.shields.io/modrinth/dt/zerowait?logo=modrinth&label=downloads&color=00af5c)](https://modrinth.com/mod/zerowait)
+[![Modrinth version](https://img.shields.io/modrinth/v/zerowait?logo=modrinth&color=00af5c)](https://modrinth.com/mod/zerowait/versions)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
-[Modrinth](https://modrinth.com/mod/zerowait) · [Versions](https://modrinth.com/mod/zerowait/versions) · [Report an issue](https://github.com/TrueWulf/ZeroWait/issues)
+[Download](https://modrinth.com/mod/zerowait) · [All versions](https://modrinth.com/mod/zerowait/versions) · [Issues](https://github.com/TrueWulf/ZeroWait/issues)
 
 </div>
 
-ZeroWait is a client-side Fabric mod that makes Minecraft reach the title
-screen as fast as possible. It splits the startup resource reload into two
-passes: the title screen only waits for what it actually needs, while sounds,
-renderers and everything else keep loading in the background.
+## Why
 
-No new menus, no required setup — drop it in your mods folder and boot.
-
-## Quick Start
-
-1. Install [Fabric Loader](https://fabricmc.net/use/).
-2. Drop the ZeroWait jar for your game version into `mods/`.
-3. Launch the game.
-
-Grab builds on the
-[Modrinth versions page](https://modrinth.com/mod/zerowait/versions) —
-1.21 through 1.21.11 and 26.1 through 26.3 are supported.
+Vanilla spends the first seconds of launch waiting for things the title
+screen never uses: sound engines, entity renderers, clouds, waypoints,
+unicode fonts. ZeroWait reorders that work. The menu appears when the menu
+is ready — the rest finishes in the background while you already sit on the
+title screen.
 
 ## How it works
 
-- **Split reload** — the startup resource reload is divided into an
-  *immediate* pass (fonts, language, core textures) and a *deferred* pass
-  (sounds, entity renderers, clouds, waypoints, splashes). The menu waits
-  only for the first one.
-- **Dedicated reload executor** — resource loading runs on a properly sized
-  thread pool (up to 16 threads) instead of vanilla's conservative one.
-- **Overlay trimming** — the Mojang loading overlay ends the instant the
-  immediate pass is done.
-- **Unicode font deferral** — the heavy unihex set is parsed in the
-  background, so menus render instantly.
-- **Fast crash preload** — the blocking class preload at boot is replaced
-  with a cheap memory reserve.
-- **CPU info prefetch** — the CPU string is fetched on a background thread
-  during boot.
+The startup resource reload is split in two:
 
-Boot time is printed to the log and shown in the bottom-left corner of the
-title screen.
+- the **immediate pass** loads only what the title screen draws — fonts,
+  language, core textures;
+- the **deferred pass** loads everything else a few ticks later, while you
+  look at the panorama instead of a progress bar.
+
+Around that split, ZeroWait:
+
+- runs resource loading on a properly sized thread pool (up to 16 threads)
+  instead of vanilla's fixed one;
+- closes the Mojang overlay the moment the immediate pass finishes;
+- skips the unihex font set until the deferred pass;
+- replaces the blocking crash-report class preload with a cheap memory
+  reserve;
+- prefetches the CPU string on a background thread.
+
+The measured boot time is printed to the log and shown in the corner of the
+title screen, so every change on your side is measurable.
+
+## Installation
+
+1. Install [Fabric Loader](https://fabricmc.net/use/).
+2. Download the jar for your game version from
+   [Modrinth](https://modrinth.com/mod/zerowait/versions).
+3. Put it in `mods/` and launch.
+
+Supported versions: **1.21 – 1.21.11** and **26.1 – 26.3**.
 
 ## Configuration
 
-Everything lives in `config/zerowait.json`, created on first launch with
-sensible defaults:
+Everything lives in `config/zerowait.json`, created on first launch.
+Defaults are safe, nothing needs to be touched:
 
-| Option | Default | Description |
+| Option | Default | |
 |---|---|---|
-| `deferStartupReload` | `true` | Split the startup reload into two passes |
-| `deferUnicodeFonts` | `true` | Skip unihex fonts on the immediate pass |
-| `skipLoadingOverlay` | `true` | Close the Mojang overlay as soon as resources are ready |
-| `dedicatedReloadExecutor` | `true` | Use the sized thread pool for resource loading |
-| `fastCrashPreload` | `true` | Replace the blocking crash-report preload |
-| `prefetchCpuInfo` | `true` | Fetch CPU info on a background thread |
-| `showBootTimeOverlay` | `true` | Show boot time on the title screen |
-| `deferredReloadStartDelayTicks` | `0` | Extra delay before the deferred pass starts |
-| `moddedImmediatePatterns` | `[]` | Class-name patterns forced into the immediate pass |
+| `deferStartupReload` | `true` | the two-pass reload itself |
+| `deferUnicodeFonts` | `true` | unihex fonts moved to the deferred pass |
+| `skipLoadingOverlay` | `true` | close the overlay as soon as possible |
+| `dedicatedReloadExecutor` | `true` | sized thread pool for resource loading |
+| `fastCrashPreload` | `true` | cheap crash-report preload |
+| `prefetchCpuInfo` | `true` | background CPU string fetch |
+| `showBootTimeOverlay` | `true` | boot time on the title screen |
+| `deferredReloadStartDelayTicks` | `0` | delay before the deferred pass |
+| `moddedImmediatePatterns` | `[]` | listeners forced into the immediate pass |
 
 ## Compatibility
 
-- Client-side only; works on singleplayer and vanilla servers.
-- Uses MixinExtras wrap-operations instead of raw redirects, so it coexists
-  with ModernFix, VMP, Lithium, Krypton and friends.
-- Every injection degrades gracefully: if a target disappears in a future
-  game update, the game still launches and the mod simply stays inactive.
-- A full resource reload is scheduled automatically if the deferred pass
-  ever fails.
+- Client-side only, works with vanilla servers and singleplayer.
+- Built on MixinExtras wrap-operations instead of raw redirects, so it
+  coexists with ModernFix, VMP, Lithium, Krypton and friends.
+- Every hook degrades gracefully: if the game changes underneath it, the
+  game still starts and the mod simply goes dormant with a log warning.
+- If the deferred pass fails, a full vanilla reload runs automatically.
 
 ## Building from source
 
 ```sh
-./gradlew build            # build the active version
-./gradlew buildAll         # build every supported version
+./gradlew buildAll
 ```
 
-Jars land in `versions/<version>/build/libs/`. Java 21 is required for
-1.21.x targets and Java 25 for 26.x (Gradle toolchains provision them
-automatically).
+Jars for every supported version land in `versions/*/build/libs/`.
+Java 21 builds the 1.21.x targets, Java 25 the 26.x ones — Gradle
+provisioning handles both.
 
 ## License
 
