@@ -1,61 +1,89 @@
 # ZeroWait
 
-**ZeroWait** is a client-side mod that makes Minecraft start faster. It restructures the startup resource reload so the title screen appears as soon as it is actually needed — instead of waiting for every sound, renderer and cloud to be ready first.
+**Boot Minecraft, not a loading screen.**
 
-No new menus, no required setup: drop it in your mods folder and boot.
+ZeroWait is a client-side Fabric mod that gets you from "Play" to the title
+screen as fast as the game allows — and trims everything that made you wait.
+
+No new menus, no required setup: drop the jar for your game version into
+`mods/` and boot.
+
+## Why
+
+Vanilla spends the first seconds of launch waiting for things the title
+screen never uses: sound engines, entity renderers, clouds, waypoints,
+unicode fonts. ZeroWait reorders that work. The menu appears when the menu
+is ready — the rest finishes in the background while you already sit on the
+title screen.
 
 ## How it works
 
-During startup Minecraft runs a full resource reload before showing the title screen. ZeroWait splits that reload into two passes:
+The startup resource reload is split in two:
 
-- **Immediate pass** — only what the title screen truly needs (fonts, language, core textures). This is what you wait for.
-- **Deferred pass** — everything else (sounds, entity renderers, clouds, waypoints, splashes, etc.) loads in the background right after the menu appears.
+- the **immediate pass** loads only what the title screen draws — fonts,
+  language, core textures;
+- the **deferred pass** loads everything else a few ticks later, while you
+  look at the panorama instead of a progress bar.
 
-On top of that:
+Around that split, ZeroWait:
 
-- **Dedicated reload executor** — resource loading runs on a properly sized thread pool (up to 16 threads) instead of vanilla's conservative one.
-- **Loading overlay trimming** — the Mojang loading overlay ends the moment the immediate pass is done, with no extra fade waiting.
-- **Unicode font deferral** — the heavy unihex font set is parsed in the background pass; menus render with the default font set instantly.
-- **Faster crash-report preload** — the blocking class preload at boot is replaced with a cheap memory reserve.
-- **CPU info prefetch** — the CPU string used by the crash report is fetched on a background thread while the game boots.
+- runs resource loading on a properly sized thread pool (up to 16 threads)
+  instead of vanilla's fixed one;
+- closes the Mojang overlay the moment the immediate pass finishes;
+- skips the unihex font set until the deferred pass;
+- replaces the blocking crash-report class preload with a cheap memory
+  reserve;
+- prefetches the CPU string on a background thread.
 
-The boot time is printed to the log and shown in the bottom-left corner of the title screen.
+The measured boot time is printed to the log and shown in the corner of the
+title screen, so every change on your side is measurable.
 
-## Compatibility
+## Installation
 
-- Client-side only. Works on vanilla servers and singleplayer.
-- Uses [MixinExtras](https://github.com/LlamaLad7/MixinExtras) wrap-operations instead of raw redirects, so it plays nicely with other optimization mods (ModernFix, VMP, Lithium, Krypton, etc.).
-- If any injection fails on a future Minecraft version, the mod degrades gracefully — the game still launches, and the mod simply stays inactive with a warning in the log.
-- A full resource reload is automatically scheduled as a fallback if the deferred pass ever fails.
+1. Install [Fabric Loader](https://fabricmc.net/use/).
+2. Download the jar for your game version from the
+   [versions page](https://modrinth.com/mod/zerowait/versions).
+3. Put it in `mods/` and launch.
+
+Supported versions: **1.21 – 1.21.11** and **26.1 – 26.3**.
 
 ## Configuration
 
-`config/zerowait.json` — created on first launch, sensible defaults, no GUI needed:
+Everything lives in `config/zerowait.json`, created on first launch.
+Defaults are safe, nothing needs to be touched:
 
-| Option | Default | Description |
+| Option | Default | |
 |---|---|---|
-| `deferStartupReload` | `true` | Split the startup reload into immediate + deferred passes |
-| `deferUnicodeFonts` | `true` | Skip unihex fonts on the immediate pass |
-| `skipLoadingOverlay` | `true` | Close the Mojang overlay as soon as resources are ready |
-| `dedicatedReloadExecutor` | `true` | Use the sized thread pool for resource loading |
-| `fastCrashPreload` | `true` | Replace the blocking crash-report preload |
-| `prefetchCpuInfo` | `true` | Fetch CPU info on a background thread |
-| `showBootTimeOverlay` | `true` | Show boot time on the title screen |
-| `deferredReloadStartDelayTicks` | `0` | Extra delay before the deferred pass starts |
-| `moddedImmediatePatterns` | `[]` | Class-name patterns forced into the immediate pass (for modded listeners that must load early) |
+| `deferStartupReload` | `true` | the two-pass reload itself |
+| `deferUnicodeFonts` | `true` | unihex fonts moved to the deferred pass |
+| `skipLoadingOverlay` | `true` | close the overlay as soon as possible |
+| `dedicatedReloadExecutor` | `true` | sized thread pool for resource loading |
+| `fastCrashPreload` | `true` | cheap crash-report preload |
+| `prefetchCpuInfo` | `true` | background CPU string fetch |
+| `showBootTimeOverlay` | `true` | boot time on the title screen |
+| `deferredReloadStartDelayTicks` | `0` | delay before the deferred pass |
+| `moddedImmediatePatterns` | `[]` | listeners forced into the immediate pass |
 
-## Supported versions
+## Compatibility
 
-- **1.21.x** — 1.21 through 1.21.11
-- **26.x** — 26.1 through 26.3
-- Fabric Loader 0.16+ (Java 21 for 1.21.x, Java 25 for 26.x)
+- Client-side only, works with vanilla servers and singleplayer.
+- Built on MixinExtras wrap-operations instead of raw redirects, so it
+  coexists with ModernFix, VMP, Lithium, Krypton and friends.
+- Every hook degrades gracefully: if the game changes underneath it, the
+  game still starts and the mod simply goes dormant with a log warning.
+- If the deferred pass fails, a full vanilla reload runs automatically.
 
-## Notes
+## Building from source
 
-- On 26.2+ the Mojang overlay behaves vanilla (the overlay API became private), the resource-splitting optimization itself is fully active.
-- Boots are fastest warm: the driver shader cache and OS file cache do their part after the first launch.
-- This mod does not touch world loading or server performance — it is strictly about the time from "Play" to the title screen.
+```sh
+./gradlew buildAll
+```
 
-## License
+Jars for every supported version land in `versions/*/build/libs/`.
+Java 21 builds the 1.21.x targets, Java 25 the 26.x ones — Gradle
+provisioning handles both.
 
-GPL-3.0-or-later. Source and details: see the repository.
+## Links
+
+- [Source code](https://github.com/TrueWulf/ZeroWait)
+- [Issue tracker](https://github.com/TrueWulf/ZeroWait/issues)
