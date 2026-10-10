@@ -89,7 +89,3 @@ Defaults are safe, nothing needs to be touched:
 Jars for every supported version land in `versions/*/build/libs/`.
 Java 21 builds the 1.21.x targets, Java 25 the 26.x ones — Gradle
 provisioning handles both.
-
-## License
-
-[GPL-3.0-or-later](LICENSE)
